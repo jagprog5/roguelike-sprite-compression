@@ -1,15 +1,18 @@
 # sprite io
 
-This describes a file format for a compressed sprite.
+This gives a basic image compression lib based on a palett lookup table.
 
-All multibyte numbers are in big endian.
+(all multibyte numbers are in big endian).
 
+Template parameters (tunable at compile time):
 DimType: u32
 PaletteIdType: u16
 
+The following describes the file format:
+
 ## Preamble
 
-It starts with the magic string JAG_TILE_COMPRESS.
+It starts with the magic string bit pattern in hex: CA, C1, C7.
 
 ## Palette
 
@@ -22,4 +25,4 @@ This gives an array of colours which is selectable by a zero based index.
 The next n bytes is the DimType width for the image.
 The next n bytes is the DimType height for the image.
 
-The file ends with an width * height array of PaletteIdType indices into the palette.
+The file ends with an width * height array of PaletteIdType indices into the palette (row major).
