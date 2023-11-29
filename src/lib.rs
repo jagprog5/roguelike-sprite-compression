@@ -1,12 +1,12 @@
-use static_assertions::const_assert;
-use std::collections::HashMap;
+pub use static_assertions::const_assert;
+pub use std::collections::HashMap;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+pub struct Pixel {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
 }
 
 impl Pixel {
@@ -56,10 +56,12 @@ impl Pixel {
     }
 }
 
-macro_rules! sprite {
+#[macro_export]
+macro_rules! sprite_sheet_impl {
     ($Name: ident, $DimType: ty, $PaletteIdType: ty) => {
-        const_assert!(std::mem::size_of::<$DimType>() <= std::mem::size_of::<usize>());
-        const_assert!(std::mem::size_of::<$PaletteIdType>() <= std::mem::size_of::<usize>());
+        use $crate::Pixel;
+        $crate::const_assert!(std::mem::size_of::<$DimType>() <= std::mem::size_of::<usize>());
+        $crate::const_assert!(std::mem::size_of::<$PaletteIdType>() <= std::mem::size_of::<usize>());
 
         #[derive(PartialEq, Eq, Debug)]
         pub struct $Name {
@@ -74,9 +76,12 @@ macro_rules! sprite {
 
             pub fn height(&self) -> $DimType {
                 // panic occurs from expect only if pixels is manually set to something that is too long
+                if self.width == 0 {
+                    return 0;
+                }
                 (self.pixels.len() / self.width as usize)
                     .try_into()
-                    .expect("image height dim exceeded")
+                    .expect("image height dim exceeded. consider adjusting DimType")
             }
 
             pub fn encode(&self) -> Result<Vec<u8>, &'static str> {
@@ -84,7 +89,7 @@ macro_rules! sprite {
                 let mut counter: $PaletteIdType = 0;
 
                 // associates each new color with its palette id
-                let mut pixel_palette_map: HashMap<Pixel, $PaletteIdType> = HashMap::new();
+                let mut pixel_palette_map: $crate::HashMap<Pixel, $PaletteIdType> = $crate::HashMap::new();
 
                 // pixels converted to palette ids, bytes
                 let mut paletted_data: Vec<u8> =
@@ -129,7 +134,7 @@ macro_rules! sprite {
                         std::collections::hash_map::Entry::Vacant(v) => {
                             if counter == <$PaletteIdType>::MAX {
                                 // MAX is reserved for background run length
-                                return Err("colour palette length exceeded");
+                                return Err("colour palette length exceeded. consider adjusting PaletteIdType");
                             }
                             let id = *v.insert(counter);
                             for b in id.to_be_bytes() {
@@ -194,7 +199,7 @@ macro_rules! sprite {
                 let palette_size = <$PaletteIdType>::from_be_bytes(palette_size_bytes);
                 data = &data[std::mem::size_of::<$PaletteIdType>()..];
 
-                let mut palette: Vec<Pixel> = Vec::with_capacity(palette_size as usize);
+                let mut palette: Vec<Pixel> = Vec::new();
 
                 for _ in 0..palette_size {
                     let pixel_bytes_ref = data.get(0..4).ok_or("incomplete pixel")?;
@@ -222,7 +227,8 @@ macro_rules! sprite {
                 let image_size = (width as usize)
                     .checked_mul(height as usize)
                     .ok_or("img dim overflow")?;
-                let mut pixels: Vec<Pixel> = Vec::with_capacity(image_size);
+
+                let mut pixels: Vec<Pixel> = Vec::new();
 
                 while pixels.len() < image_size {
                     let palette_id_bytes_ref = data
@@ -234,7 +240,6 @@ macro_rules! sprite {
                     data = &data[std::mem::size_of::<$PaletteIdType>()..];
 
                     if (palette_id == <$PaletteIdType>::MAX) {
-                        // run length
                         let run_count_ref = data.get(0..1).ok_or("incomplete run size")?;
                         let run_count_bytes: [u8; 1] = run_count_ref.try_into().unwrap();
                         data = &data[1..];
@@ -263,7 +268,7 @@ macro_rules! sprite {
 mod tests {
     use super::*;
 
-    sprite!(Img, u32, u16);
+    sprite_sheet_impl!(Img, u32, u16);
 
     #[test]
     fn encode_decode() {
@@ -332,22 +337,22 @@ mod tests {
 
         assert_eq!(img_encoding, correct_encoding);
         let image_decoded = Img::decode(&img_encoding).unwrap();
-        println!("{:?}", image_decoded);
         assert_eq!(image_decoded, img);
     }
 
     #[test]
     fn long_run_length() {
-        let mut v : Vec<Pixel> = Vec::new();
+        let mut v: Vec<Pixel> = Vec::new();
         v.push(Pixel::red());
-        for _ in 0..23*23-2 { // total size 23x23
+        for _ in 0..23 * 23 - 2 {
+            // total size 23x23
             v.push(Pixel::transparent_black());
         }
         v.push(Pixel::red());
 
         let img = Img {
             width: 23u32,
-            pixels: v
+            pixels: v,
         };
 
         let img_encoding = img.encode().unwrap();
@@ -371,7 +376,6 @@ mod tests {
 
         assert_eq!(img_encoding, correct_encoding);
         let image_decoded = Img::decode(&img_encoding).unwrap();
-        println!("{:?}", image_decoded);
         assert_eq!(image_decoded, img);
     }
 }

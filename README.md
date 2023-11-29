@@ -1,5 +1,11 @@
 # sprite io
 
+```rust
+use sprite_sheet_compress::sprite_sheet_impl;
+sprite_sheet_impl!(Img, u32, u8);
+// Pixel; Img encode, decode provided
+```
+
 This is a basic lossless image compressions lib intended for spite sheets. It implements:
 
 1. A palette lookup table.
