@@ -1,28 +1,39 @@
 # sprite io
 
-This gives a basic image compression lib based on a palett lookup table.
+This is a basic lossless image compressions lib intended for spite sheets. It implements:
 
-(all multibyte numbers are in big endian).
+1. A palette lookup table.
+2. Run length encoding, used only for transparent black pixels (0000).
 
-Template parameters (tunable at compile time):
-DimType: u32
-PaletteIdType: u16
+Compile time parameters:  
+`DimType`: u32, the type which stores the image's dimensions.  
+`PaletteIdType`: u16, the type which stores indices within the palette lookup (error if too many colours used).
+ 
+# File Format
 
-The following describes the file format:
+All multibyte numbers are in big endian. Elements are listed in order of appearance in the file.
 
 ## Preamble
 
-It starts with the magic string bit pattern in hex: CA, C1, C7.
+It starts with the magic string in hex: CA, C1, C7.
 
 ## Palette
 
-Next is a PaletteIdType indicating the size of the following array. 
-Next is an array of RGBA8888 color elements.  
-This gives an array of colours which is selectable by a zero based index.
+A `PaletteIdType` indicating the size of the palette lookup array.  
+This is followed by the array of RGBA8888 elements. It is zero indexed later.
 
-## Image
+## Dimensions
 
-The next n bytes is the DimType width for the image.
-The next n bytes is the DimType height for the image.
+`DimType` width for image.  
+`DimType` height for image.
 
-The file ends with an width * height array of PaletteIdType indices into the palette (row major).
+## Pixels
+
+The file ends with an array of `PaletteIdType` indices into the palette, representing each pixel value in the image (row major).
+
+However, the value `PaletteIdType::MAX` is reserved for a special meaning. The following byte after it indicates the number of entirely transparent black pixels that follow. For example,
+
+10 transparent black pixels in a row => MAX, 10
+
+If more than 255 of these pixels are in a row, then this is encoded by multiple `<MAX, count>` pairs.
+
