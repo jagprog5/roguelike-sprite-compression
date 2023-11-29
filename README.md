@@ -6,14 +6,19 @@ sprite_sheet_impl!(Img, u32, u8);
 // Pixel; Img encode, decode provided
 ```
 
+```bash
+cargo test # run tests
+cargo fuzz run fuzz_target_1 # run fuzzer
+```
+
 This is a basic lossless image compressions lib intended for spite sheets. It implements:
 
 1. A palette lookup table.
 2. Run length encoding, used only for transparent black pixels (0000).
 
 Compile time parameters:  
-`DimType`: u32, the type which stores the image's dimensions.  
-`PaletteIdType`: u16, the type which stores indices within the palette lookup (error if too many colours used).
+`DimType`: the type which stores the image's dimensions.  
+`PaletteIdType`: the type which stores indices within the palette lookup (error if too many colours used).
  
 # File Format
 
