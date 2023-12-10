@@ -1,14 +1,13 @@
 # sprite io
 
-```rust
-use sprite_sheet_compress::sprite_sheet_impl;
-sprite_sheet_impl!(Img, u32, u8);
-// Pixel; Img encode, decode provided
-```
-
 ```bash
 cargo test # run tests
-cargo fuzz run fuzz_target_1 # run fuzzer
+
+cargo install cargo-fuzz # fuzzer dep
+rustup install nightly
+rustup default nightly
+
+cargo fuzz run fuzz_target_u16 # run fuzzer
 ```
 
 This is a basic lossless image compressions lib intended for spite sheets. It implements:
@@ -22,7 +21,7 @@ Compile time parameters:
  
 # File Format
 
-All multibyte numbers are in big endian. Elements are listed in order of appearance in the file.
+All multibyte numbers are in big endian. The following elements are listed in the same order as in the file:
 
 ## Preamble
 
@@ -47,4 +46,3 @@ However, the value `PaletteIdType::MAX` is reserved for a special meaning. The f
 10 transparent black pixels in a row => MAX, 10
 
 If more than 255 of these pixels are in a row, then this is encoded by multiple `<MAX, count>` pairs.
-

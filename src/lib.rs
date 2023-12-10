@@ -59,14 +59,13 @@ impl Pixel {
 #[macro_export]
 macro_rules! sprite_sheet_impl {
     ($Name: ident, $DimType: ty, $PaletteIdType: ty) => {
-        use $crate::Pixel;
         $crate::const_assert!(std::mem::size_of::<$DimType>() <= std::mem::size_of::<usize>());
         $crate::const_assert!(std::mem::size_of::<$PaletteIdType>() <= std::mem::size_of::<usize>());
 
         #[derive(PartialEq, Eq, Debug)]
         pub struct $Name {
             width: $DimType,
-            pixels: Vec<Pixel>, // row major
+            pixels: Vec<$crate::Pixel>, // row major
         }
 
         impl $Name {
@@ -89,7 +88,7 @@ macro_rules! sprite_sheet_impl {
                 let mut counter: $PaletteIdType = 0;
 
                 // associates each new color with its palette id
-                let mut pixel_palette_map: $crate::HashMap<Pixel, $PaletteIdType> = $crate::HashMap::new();
+                let mut pixel_palette_map: $crate::HashMap<$crate::Pixel, $PaletteIdType> = $crate::HashMap::new();
 
                 // pixels converted to palette ids, bytes
                 let mut paletted_data: Vec<u8> =
@@ -113,7 +112,7 @@ macro_rules! sprite_sheet_impl {
                 };
 
                 for &pixel in self.pixels.iter() {
-                    if pixel == Pixel::transparent_black() {
+                    if pixel == $crate::Pixel::transparent_black() {
                         if transparent_black_count == u8::MAX {
                             // guard increment overflow (sets count to 0)
                             handle_bkg_run_end(&mut transparent_black_count, &mut paletted_data);
@@ -147,7 +146,7 @@ macro_rules! sprite_sheet_impl {
 
                 handle_bkg_run_end(&mut transparent_black_count, &mut paletted_data);
 
-                let mut palette_pixels: Vec<($PaletteIdType, Pixel)> = pixel_palette_map
+                let mut palette_pixels: Vec<($PaletteIdType, $crate::Pixel)> = pixel_palette_map
                     .drain()
                     .map(|(pixel, id)| (id, pixel))
                     .collect();
@@ -199,12 +198,12 @@ macro_rules! sprite_sheet_impl {
                 let palette_size = <$PaletteIdType>::from_be_bytes(palette_size_bytes);
                 data = &data[std::mem::size_of::<$PaletteIdType>()..];
 
-                let mut palette: Vec<Pixel> = Vec::new();
+                let mut palette: Vec<$crate::Pixel> = Vec::new();
 
                 for _ in 0..palette_size {
                     let pixel_bytes_ref = data.get(0..4).ok_or("incomplete pixel")?;
                     let pixel_bytes = pixel_bytes_ref.try_into().unwrap();
-                    palette.push(Pixel::from_bytes(pixel_bytes));
+                    palette.push($crate::Pixel::from_bytes(pixel_bytes));
                     data = &data[4..];
                 }
 
@@ -228,7 +227,7 @@ macro_rules! sprite_sheet_impl {
                     .checked_mul(height as usize)
                     .ok_or("img dim overflow")?;
 
-                let mut pixels: Vec<Pixel> = Vec::new();
+                let mut pixels: Vec<$crate::Pixel> = Vec::new();
 
                 while pixels.len() < image_size {
                     let palette_id_bytes_ref = data
@@ -248,7 +247,7 @@ macro_rules! sprite_sheet_impl {
                             return Err("overlong run length at end");
                         }
                         for _ in 0..run_count {
-                            pixels.push(Pixel::transparent_black());
+                            pixels.push($crate::Pixel::transparent_black());
                         }
                     } else {
                         let pixel = palette
