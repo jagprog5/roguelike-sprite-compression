@@ -61,6 +61,8 @@ macro_rules! sprite_sheet_impl {
     ($Name: ident, $DimType: ty, $PaletteIdType: ty) => {
         $crate::const_assert!(std::mem::size_of::<$DimType>() <= std::mem::size_of::<usize>());
         $crate::const_assert!(std::mem::size_of::<$PaletteIdType>() <= std::mem::size_of::<usize>());
+        $crate::const_assert!(<$DimType>::MIN == 0);
+        $crate::const_assert!(<$PaletteIdType>::MIN == 0);
 
         #[derive(PartialEq, Eq, Debug)]
         pub struct $Name {
